@@ -113,11 +113,12 @@ class TwoLayerNet(object):
     #############################################################################
     
     # Calculate softmax loss.
-    output = scores
-    output = np.exp(output)
+    output = np.exp(scores) # (N, C)
 
-    for i in range(N):
-      output[i, :] /= np.sum(output[i, :])
+    output /= np.sum(output, axis=1).reshape(N, 1)
+
+    #for i in range(N):
+    #  output[i, :] /= np.sum(output[i, :])
 
     loss -= np.sum(np.log(output[np.arange(N), y]))
     loss /= N
@@ -139,27 +140,25 @@ class TwoLayerNet(object):
     #   out the gradients and their respective calculations (i.e. upstream x local).
 
     # This output gradient is the same as how we computed for softmax.
-    doutput = output # (N, C)
-    doutput[np.arange(N), y] -= 1 # (N, C)
+    
+    dZ = np.copy(output) # (N, C)
+    dZ[np.arange(N), y] -= 1 # (N, C)
 
-    db2 = np.sum(doutput, axis=0) # (N, 1)
-    dH3 = db2
-    dW2 = np.dot(H2.T, doutput) # (H, N) x (N, C) = (H, C)
-    dH2 = np.dot(doutput, W2.T) # (N, C) x (C, H) = (N, H)
-
-    dH1 = dH2 * (H1 > 0)
-
-    #dH2[H1 < 0] = 0 # ReLU derivative.
-    #dH1 = dH2 # (N, H)
-
+    db2 = np.sum(dZ, axis=0) # (N, 1)
+    dH3 = dZ # (N, 1)
+    dW2 = np.dot(H2.T, dH3) # (H, N) x (N, C) = (H, C)
+    dH2 = np.dot(dZ, W2.T) # (N, C) x (C, H) = (N, H)
+    dH1 = dH2 * (H1 > 0) # Derivative of ReLU. (N, H)
     db1 = np.sum(dH1, axis=0) # (H, 1)
-    dH0 = db1
-    dW1 = np.dot(X.T, dH2) # (D, N) x (N, H) = (D, H)
+    dH0 = dH1 # (N, H)
+    dW1 = np.dot(X.T, dH0) # (D, N) x (N, H) = (D, H)
     dX = np.dot(dH2, W1.T) # (N, H) x (H, D) = (N, D)
 
-    # Add regularization to gradients.
+    # Add regularization and scale.
     dW2 /= N 
     dW1 /= N
+    db2 /= N
+    db1 /= N
     dW2 += reg * W2
     dW1 += reg * W1
 
@@ -167,7 +166,7 @@ class TwoLayerNet(object):
     grads['W2'] = dW2
     grads['b1'] = db1
     grads['b2'] = db2
-
+    
     #############################################################################
     #                              END OF YOUR CODE                             #
     #############################################################################

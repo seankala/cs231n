@@ -136,14 +136,13 @@ class TwoLayerNet(object):
     # grads['W1'] should store the gradient on W1, and be a matrix of same size #
     #############################################################################
     
-    # This entire process will make sense if you draw the computational graph and write
-    #   out the gradients and their respective calculations (i.e. upstream x local).
-
     # This output gradient is the same as how we computed for softmax.
-    
     dZ = np.copy(output) # (N, C)
     dZ[np.arange(N), y] -= 1 # (N, C)
 
+    # This entire computational process will make sense if you draw the computational
+    #   graph.
+    
     db2 = np.sum(dZ, axis=0) # (N, 1)
     dH3 = dZ # (N, 1)
     dW2 = np.dot(H2.T, dH3) # (H, N) x (N, C) = (H, C)

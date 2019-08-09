@@ -27,6 +27,10 @@ class TwoLayerNet(object):
         """
         Initialize a new network.
 
+        D = 3072
+        H = 100
+        C = 10
+
         Inputs:
         - input_dim: An integer giving the size of the input
         - hidden_dim: An integer giving the size of the hidden layer
@@ -39,6 +43,9 @@ class TwoLayerNet(object):
         self.params = {}
         self.reg = reg
 
+        # Added in by Seankala. You need this if you want to use affine_backward.
+        self.cache = {}
+
         ############################################################################
         # TODO: Initialize the weights and biases of the two-layer net. Weights    #
         # should be initialized from a Gaussian with standard deviation equal to   #
@@ -47,7 +54,29 @@ class TwoLayerNet(object):
         # weights and biases using the keys 'W1' and 'b1' and second layer weights #
         # and biases using the keys 'W2' and 'b2'.                                 #
         ############################################################################
-        pass
+        
+        # W1 -> (D, H)
+        # b1 -> (H,)
+        # W2 -> (H, C)
+        # b2 -> (C,)
+
+        self.D = input_dim
+        self.H = hidden_dim
+        self.C = num_classes
+
+        # The mean of the Normal distribution was not specified, so we assume they are
+        #   zero-centered.
+        # loc -> mean, scale -> standard deviation. Check the documentation for more info.
+        W1 = np.random.normal(loc=0.0, scale=weight_scale, size=(self.D, self.H))
+        b1 = np.zeros(shape=(self.H,))
+        W2 = np.random.normal(loc=0.0, scale=weight_scale, size=(self.H, self.C))
+        b2 = np.zeros(shape=(self.C,))
+
+        self.params['W1'] = W1
+        self.params['b1'] = b1
+        self.params['W2'] = W2
+        self.params['b2'] = b2
+
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
@@ -77,7 +106,38 @@ class TwoLayerNet(object):
         # TODO: Implement the forward pass for the two-layer net, computing the    #
         # class scores for X and storing them in the scores variable.              #
         ############################################################################
-        pass
+
+        # X -> (N, D)
+        # W1 -> (D, H)
+        # b1 -> (H,)
+        # W2 -> (H, C)
+        # b2 -> (C,)
+
+        N = X.shape[0]
+        W1 = self.params['W1']
+        b1 = self.params['b1']
+        W2 = self.params['W2']
+        b2 = self.params['b2']
+
+        # Compute forward pass through network.
+        
+        ################## Method 1: Compute the old-fashioned way. ################
+        #X = np.reshape(X, (N, -1))
+        #H0 = np.matmul(X, W1) # (N, D) x (D, H) = (N, H)
+        #H1 = H0 + b1 # (N, H) + (H,) = (N, H)
+        #H2 = np.matmul(H1, W2) # (N, H) x (H, C) = (N, C)
+        #Z = H2 + b2 # (N, C) + (C,) = (N, C)
+        #
+        #scores = Z
+        ############################################################################
+
+        ################## Method 2: Compute using the given functions. ############
+        H1, self.cache['H1'] = affine_forward(X, W1, b1)
+        Z, self.cache['Z'] = affine_forward(H1, W2, b2)
+
+        scores = Z
+        ############################################################################
+
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
@@ -97,7 +157,44 @@ class TwoLayerNet(object):
         # automated tests, make sure that your L2 regularization includes a factor #
         # of 0.5 to simplify the expression for the gradient.                      #
         ############################################################################
-        pass
+        
+        # Compute loss and add regularization.
+        # If you look at the last few lines of softmax_loss, you'll know why dZ is
+        #   computed using that function.
+        loss, dZ = softmax_loss(scores, y)
+
+        reg_term_W1 = 0.5 * self.reg * np.sum(W1 * W1)
+        reg_term_W2 = 0.5 * self.reg * np.sum(W2 * W2)
+        
+        loss += reg_term_W1 + reg_term_W2
+
+
+        ################## Method 1: Compute the old-fashioned way. ################
+        #db2 = np.sum(dZ, axis=0) # (C,)
+        #dH2 = dZ # (N, C)
+        #dW2 = np.matmul(H1.T, dH2) # (H, N) x (N, C) = (H, C)
+        #dH1 = np.matmul(dH2, W2.T) # (N, C) x (C, H) = (N, H)
+        #db1 = np.sum(dH1, axis=0) # (H,)
+        #dH0 = dH1 # (N, H)
+        #dW1 = np.matmul(X.T, dH0) # (D, N) x (N, H) = (D, H)
+        #dX = np.matmul(dH0, W1.T) # (N, H) x (H, D) = (N, D)
+        ############################################################################
+
+        ################## Method 2: Compute using the given functions. ############
+        dH2, dW2, db2 = affine_backward(dZ, self.cache['Z'])
+        dH1, dW1, db1 = affine_backward(dH2, self.cache['H1'])
+        ############################################################################
+
+        # Store gradients.
+        grads['W1'] = dW1
+        grads['b1'] = db1
+        grads['W2'] = dW2
+        grads['b2'] = db2
+
+        # Perform regularization.
+        grads['W1'] += self.reg * W1
+        grads['W2'] += self.reg * W2
+
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################

@@ -268,7 +268,7 @@ class FullyConnectedNet(object):
         C = num_classes
 
         for i in range(self.num_layers - 1):
-          if i == 0:
+          if i == 0: # Initialization for first layer.
             H = hidden_dims[i]
             W_curr = np.random.normal(loc=0.0, scale=weight_scale, size=(D, H))
             b_curr = np.zeros(shape=(H,))
@@ -276,7 +276,7 @@ class FullyConnectedNet(object):
             self.params['b{}'.format(i + 1)] = b_curr
 
             next_dim = H
-          else:
+          else: # Initialization for intermediate layers.
             H = hidden_dims[i]
             W_curr = np.random.normal(loc=0.0, scale=weight_scale, size=(next_dim, H))
             b_curr = np.zeros(shape=(H,))
@@ -285,6 +285,7 @@ class FullyConnectedNet(object):
 
             next_dim = H
 
+        # Initialization for last layer.
         W_last = np.random.normal(loc=0.0, scale=weight_scale, size=(next_dim, C))
         b_last = np.zeros(shape=(C,))
         self.params['W{}'.format(self.num_layers)] = W_last
@@ -387,31 +388,28 @@ class FullyConnectedNet(object):
         # of 0.5 to simplify the expression for the gradient.                      #
         ############################################################################
         
+        # I initially had a 0.5 term being multiplied to (self.reg * W_curr) when storing
+        #   the gradients. This was causing the subsequent gradients to have high relative
+        #   error.
+
         # Compute loss, output gradient, and L2 regularization.
         loss, dZ = softmax_loss(scores, y)
-        W_last = self.params['W{}'.format(self.num_layers)]
-        loss += 0.5 * self.reg * np.sum(W_last * W_last)
 
-        # Compute the gradients for the last layer.
-        dX, dW_last, db_last = affine_backward(dZ, self.fc_cache['last'])
-        
-        # Store gradients for the last layer in grads dict.
-        grads['W{}'.format(self.num_layers)] = dW_last + (0.5 * self.reg * self.params['W{}'.format(self.num_layers)])
-        grads['b{}'.format(self.num_layers)] = db_last
+        for i in range(self.num_layers, 0, -1):
+          W_curr = self.params['W{}'.format(i)]
+          b_curr = self.params['b{}'.format(i)]
+          reg_term = 0.5 * self.reg * np.sum(W_curr * W_curr)
+          loss += reg_term
 
-        for i in reversed(range(self.num_layers)):
-          if i == 0:
-            break
+          if i == self.num_layers: # Last output layer.
+            dX, dW, db = affine_backward(dZ, self.fc_cache['last'])
+            grads['W{}'.format(i)] = dW + (self.reg * W_curr)
+            grads['b{}'.format(i)] = db
           else:
             dReLU = relu_backward(dX, self.relu_cache['l{}'.format(i)])
             dX, dW, db = affine_backward(dReLU, self.fc_cache['l{}'.format(i)])
-          
-            reg_term = 0.5 * self.reg * self.params['W{}'.format(i)]
-            grads['W{}'.format(i)] = dW + reg_term
+            grads['W{}'.format(i)] = dW + (self.reg * W_curr)
             grads['b{}'.format(i)] = db
-
-            reg_term = np.sum(np.square(self.params['W{}'.format(i)]))
-            loss += 0.5 * self.reg * reg_term
 
         ############################################################################
         #                             END OF YOUR CODE                             #

@@ -390,7 +390,7 @@ class FullyConnectedNet(object):
         
         # I initially had a 0.5 term being multiplied to (self.reg * W_curr) when storing
         #   the gradients. This was causing the subsequent gradients to have high relative
-        #   error.
+        #   error. Adding in the 0.5 term once in the loss is enough.
 
         # Compute loss, output gradient, and L2 regularization.
         loss, dZ = softmax_loss(scores, y)

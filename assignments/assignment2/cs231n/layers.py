@@ -188,6 +188,9 @@ def batchnorm_forward(x, gamma, beta, bn_param):
     running_mean = bn_param.get('running_mean', np.zeros(D, dtype=x.dtype))
     running_var = bn_param.get('running_var', np.zeros(D, dtype=x.dtype))
 
+    # Added in by Seankala.
+    # These functions represent nodes in 
+
     out, cache = None, None
     if mode == 'train':
         #######################################################################
@@ -205,7 +208,36 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         # variance, storing your result in the running_mean and running_var   #
         # variables.                                                          #
         #######################################################################
-        pass
+        
+        # Computational graph construction.
+        H0 = x # (N, D) / Starting point.
+        H1 = np.mean(H0, axis=0) # (D,) / Mean over all the rows (i.e. samples).
+        H2 = H0 - H1 # (N, D) / x - mu
+        H3 = np.square(H2) # (N, D) / (x - mu) ** 2
+        H4 = np.mean(H3, axis=0) # (D,) / Variance calculation.
+        H5 = H4 + eps # (D,) / Add numeric stability term.
+        H6 = np.sqrt(H5) # (D,) / Calculate square root.
+        H7 = 1.0 / H6 # (D,) / Create denominator.
+        H8 = H2 * H7 # (N, D) / Multiply element-wise.
+        H9 = H8 * gamma # (N, D) / Scale.
+        Z = H9 + beta # (N, D) / Shift.
+
+        # Store values in more-readable variables.
+        x_mu = H1 # (D,)
+        x_minus = H2 # (N, D)
+        var = H4 # (D,)
+        var_sqrt = H6 # (D,)
+        x_hat = H8 # (N, D)
+        out = Z # (N, D)
+
+        cache = (x_hat, x_minus, gamma, x_mu, var, var_sqrt, eps)
+
+        # running_mean = momentum * running_mean + (1 - momentum) * sample_mean
+        # running_var = momentum * running_var + (1 - momentum) * sample_var
+
+        running_mean = momentum * running_mean + (1 - momentum) * x_mu
+        running_var = momentum * running_var + (1 - momentum) * var
+
         #######################################################################
         #                           END OF YOUR CODE                          #
         #######################################################################
@@ -216,7 +248,10 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         # then scale and shift the normalized data using gamma and beta.      #
         # Store the result in the out variable.                               #
         #######################################################################
-        pass
+        
+        x_hat = (x - running_mean) / np.sqrt(running_var + eps)
+        out = gamma * x_hat + beta
+
         #######################################################################
         #                          END OF YOUR CODE                           #
         #######################################################################
@@ -252,7 +287,65 @@ def batchnorm_backward(dout, cache):
     # TODO: Implement the backward pass for batch normalization. Store the    #
     # results in the dx, dgamma, and dbeta variables.                         #
     ###########################################################################
-    pass
+    
+    N, D = dout.shape
+
+    x_hat, x_minus, gamma, x_mu, var, var_sqrt, eps = cache
+
+    # Starting point.
+    dZ = dout # (N, D)
+
+    # Step 1: Derivative w.r.t. beta.
+    dZ_beta = np.ones(shape=(N,))
+    dbeta = np.matmul(dZ.T, dZ_beta) #np.sum(dZ, axis=0) # (D,)
+    
+    # Step 2: Derivative w.r.t. H9.
+    dZ_H9 = 1
+    dH9 = dZ * dZ_H9 # (N, D) * 1 = (N, D)
+    
+    # Step 3: Derivative w.r.t. gamma.
+    dH9_gamma = x_hat
+    dgamma = np.sum(dZ * dH9_gamma, axis=0) # (D,)
+
+    # Step 4: Derivative w.r.t. H8 (x_hat).
+    dH9_H8 = gamma
+    dH8 = dH9 * dH9_H8 # (N, D) * (D,) = (N, D)
+
+    # Step 5: Derivative w.r.t. H7 (fraction term).
+    dH8_H7 = -x_minus / np.square(var_sqrt) # (N, D) / (D,) = (N, D)
+    dH7 =  np.sum(dH8 * dH8_H7, axis=0) # (N, D) * (N, D) = (D,)
+
+    # Step 6: Derivative w.r.t. H6 (square root term).
+    dH7_H6 = 1.0 / np.square(var_sqrt) # (D,)
+    dH6 = dH7 * dH7_H6 # (D,)
+
+    # Step 7: Derivative w.r.t. H5 (sum of variance and eps).
+    dH6_H5 = 1.0 / (2 * var_sqrt) # (D,)
+    dH5 = dH6 * dH6_H5 # (D,)
+    
+    # Step 8: Derivative w.r.t. H4 (variance).
+    dH5_H4 = np.ones(shape=(D,)) # (D,)
+    dH4 = dH5 * dH5_H4 # (D,) * (D,) = (D,)
+
+    # Step 9: Derivative w.r.t. H3 (square of difference).
+    dH4_H3 = -2 * x_mu # (D,)
+    dH3 = dH4 * dH4_H3 # (D,) * (D,)
+
+    # Step 10: Derivative w.r.t. H2 (x_minus).
+    dH3_H2 = 2 * x_minus # (N, D)
+    dH2 = dH3_H2 * dH3 # (N, D) * (D,) = (N, D)
+
+    # Step 11: Derivative w.r.t. H1 (mean).
+    dH2_H1 = -np.ones(shape=(D,))
+    dH1 = -np.sum(dH2, axis=0)
+
+    # Step 12: Derivative w.r.t. H0 (same as x).
+    dH2_H0 = np.ones(shape=(D,))
+    dH1_H0 = 1
+    dH0 = dH2_H0 + dH1_H0
+
+    dx = dH0
+
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
@@ -282,7 +375,8 @@ def batchnorm_backward_alt(dout, cache):
     # should be able to compute gradients with respect to the inputs in a     #
     # single statement; our implementation fits on a single 80-character line.#
     ###########################################################################
-    pass
+    
+
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################

@@ -223,19 +223,17 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         Z = H9 + beta # (N, D) / Shift.
 
         # Store values in more-readable variables.
-        x_mu = H1 # (D,)
-        x_minus = H2 # (N, D)
+        mu = H1 # (D,)
         var = H4 # (D,)
-        var_sqrt = H6 # (D,)
         x_hat = H8 # (N, D)
         out = Z # (N, D)
 
-        cache = (x_hat, x_minus, gamma, x_mu, var, var_sqrt, eps)
+        cache = (x, mu, var, x_hat, gamma, eps)
 
         # running_mean = momentum * running_mean + (1 - momentum) * sample_mean
         # running_var = momentum * running_var + (1 - momentum) * sample_var
 
-        running_mean = momentum * running_mean + (1 - momentum) * x_mu
+        running_mean = momentum * running_mean + (1 - momentum) * mu
         running_var = momentum * running_var + (1 - momentum) * var
 
         #######################################################################
@@ -290,59 +288,60 @@ def batchnorm_backward(dout, cache):
     
     N, D = dout.shape
 
-    x_hat, x_minus, gamma, x_mu, var, var_sqrt, eps = cache
+    x, mu, var, x_hat, gamma, eps = cache
+    dZ = dout
 
-    # Starting point.
-    dZ = dout # (N, D)
-
-    # Step 1: Derivative w.r.t. beta.
-    dZ_beta = np.ones(shape=(N,))
-    dbeta = np.matmul(dZ.T, dZ_beta) #np.sum(dZ, axis=0) # (D,)
+    # Step 1: beta
+    dbeta = np.sum(dZ, axis=0)
     
-    # Step 2: Derivative w.r.t. H9.
+    # Step 2: H9
     dZ_H9 = 1
-    dH9 = dZ * dZ_H9 # (N, D) * 1 = (N, D)
-    
-    # Step 3: Derivative w.r.t. gamma.
-    dH9_gamma = x_hat
-    dgamma = np.sum(dZ * dH9_gamma, axis=0) # (D,)
+    dH9 = dZ * dZ_H9
 
-    # Step 4: Derivative w.r.t. H8 (x_hat).
+    # Step 3: gamma
+    dgamma = np.sum(dH9 * x_hat, axis=0)
+
+    # Step 4: H8
     dH9_H8 = gamma
-    dH8 = dH9 * dH9_H8 # (N, D) * (D,) = (N, D)
+    dH8 = dH9 * dH9_H8
 
-    # Step 5: Derivative w.r.t. H7 (fraction term).
-    dH8_H7 = -x_minus / np.square(var_sqrt) # (N, D) / (D,) = (N, D)
-    dH7 =  np.sum(dH8 * dH8_H7, axis=0) # (N, D) * (N, D) = (D,)
+    # Step 5: H7
+    dH8_H7 = x - mu
+    dH7 = np.sum(dH8 * dH8_H7, axis=0)
 
-    # Step 6: Derivative w.r.t. H6 (square root term).
-    dH7_H6 = 1.0 / np.square(var_sqrt) # (D,)
-    dH6 = dH7 * dH7_H6 # (D,)
+    # Step 6: H6
+    dH7_H6 = -1.0 / np.square(np.sqrt(var + eps))
+    dH6 = dH7 * dH7_H6
 
-    # Step 7: Derivative w.r.t. H5 (sum of variance and eps).
-    dH6_H5 = 1.0 / (2 * var_sqrt) # (D,)
-    dH5 = dH6 * dH6_H5 # (D,)
-    
-    # Step 8: Derivative w.r.t. H4 (variance).
-    dH5_H4 = np.ones(shape=(D,)) # (D,)
-    dH4 = dH5 * dH5_H4 # (D,) * (D,) = (D,)
+    # Step 7: H5
+    dH6_H5 = 1.0 / (2 * np.sqrt(var + eps))
+    dH5 = dH6 * dH6_H5
 
-    # Step 9: Derivative w.r.t. H3 (square of difference).
-    dH4_H3 = -2 * x_mu # (D,)
-    dH3 = dH4 * dH4_H3 # (D,) * (D,)
+    # Step 8: eps
+    dH5_eps = 1
+    deps = dH5 * dH5_eps
 
-    # Step 10: Derivative w.r.t. H2 (x_minus).
-    dH3_H2 = 2 * x_minus # (N, D)
-    dH2 = dH3_H2 * dH3 # (N, D) * (D,) = (N, D)
+    # Step 9: H4
+    dH5_H4 = (1.0 / N) * np.ones(shape=(N, D))
+    dH4 = dH5 * dH5_H4
 
-    # Step 11: Derivative w.r.t. H1 (mean).
-    dH2_H1 = -np.ones(shape=(D,))
-    dH1 = -np.sum(dH2, axis=0)
+    # Step 10: H3
+    dH4_H3 = 2 * (x - mu)
+    dH3 = dH4 * dH4_H3
 
-    # Step 12: Derivative w.r.t. H0 (same as x).
-    dH2_H0 = np.ones(shape=(D,))
-    dH1_H0 = 1
-    dH0 = dH2_H0 + dH1_H0
+    # Step 11: H2
+    dH8_H2 = 1.0 / np.sqrt(var + eps)
+    dH3_H2 = 2 * (x - mu)
+    dH2 = (dH8 * dH8_H2) + (dH4 * dH3_H2)
+
+    # Step 12: H1
+    dH2_H1 = -1
+    dH1 = np.sum(dH2, axis=0) * dH2_H1
+
+    # Step 13: H0
+    dH1_H0 = (1.0 / N) * np.ones(shape=(N, D))
+    dH2_H0 = 1
+    dH0 = (dH1 * dH1_H0) + (dH2 * dH2_H0)
 
     dx = dH0
 

@@ -382,9 +382,10 @@ def batchnorm_backward_alt(dout, cache):
     dbeta = np.sum(dZ, axis=0)
     dgamma = np.sum(dZ * x_hat, axis=0)
 
-    # Computation of x is a bit more complicated, but shouldn't be too hard.
-    dH1_H0 = (1 / N) * np.ones(shape=(N, D))
-    dH1 = 
+    dH8 = dout * gamma
+    frac_var = 1.0 / np.sqrt(var + eps)
+
+    dx = (1.0 / N) * frac_var * (N * dH8 - np.sum(dH8, axis=0) - x_hat * np.sum(dH8 * x_hat, axis=0))
 
     ###########################################################################
     #                             END OF YOUR CODE                            #

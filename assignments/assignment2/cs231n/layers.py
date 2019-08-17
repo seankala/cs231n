@@ -287,55 +287,67 @@ def batchnorm_backward(dout, cache):
     N, D = dout.shape
 
     x, mu, var, x_hat, gamma, eps = cache
+
+    # Step 1: dZ -> (N, D)
     dZ = dout
 
-    # Step 1: dbeta -> (D,)
-    dbeta = np.sum(dZ, axis=0) # (D,)
+    # Step 2: dbeta -> (D,)
+    dZ_beta = 1
+    dbeta = dZ * dZ_beta # (N, D)
+    dbeta = np.sum(dbeta, axis=0) # (D,)
 
-    # Step 2: dH8 -> (N, D)
-    dZ_H8 = 1 # (D,)
-    dH8 = dZ * dZ_H8 # (N, D) * (D,) = (N, D)
+    # Step 3: dH9 -> (N, D)
+    dZ_H9 = 1
+    dH9 = dZ * dZ_H9 # (N, D)
 
-    # Step 3: dgamma -> (D,)
-    dH8_gamma = x_hat # (D,)
-    dgamma = dH8 * dH8_gamma # (N, D) * (D,)
-    dgamma = np.sum(dgamma, axis=0) # We have to sum in order to match the dimensions.
+    # Step 4: dgamma -> (D,)
+    dH9_gamma = x_hat # (N, D)
+    dgamma = dH9 * dH9_gamma # (N, D) * (N, D)
+    dgamma = np.sum(dgamma, axis=0)
 
-    # Step 4: dH7 -> (N, D)
-    dH8_H7 = gamma # (D,)
+    # Step 5: dH8 -> (N, D)
+    dH9_H8 = gamma # (D,)
+    dH8 = dH9 * dH9_H8 # (N, D) * (D,)
+
+    # Step 6: dH7 -> (D,)
+    dH8_H7 = x - mu # (N, D)
     dH7 = dH8 * dH8_H7 # (N, D) * (N, D)
+    dH7 = np.sum(dH7, axis=0) # (D,)
 
-    # Step 5: dH6 -> (D,)
-    dH7_H6 = x - mu # (N, D)
-    dH6 = dH7 * dH7_H6 # (N, D) * (N, D)
-    dH6 = np.sum(dH6, axis=0) # (D,)
+    # Step 7: dH6 -> (D,)
+    dH7_H6 = -1.0 / (var + eps) # (D,)
+    dH6 = dH7 * dH7_H6 # (D,) * (D,)
 
-    # Step 6: dH5 -> (D,)
-    dH6_H5 = -1.0 / (var + eps) # (D,)
+    # Step 8: dH5 -> (D,)
+    dH6_H5 = 1.0 / (2 * np.sqrt(var + eps)) # (D,)
     dH5 = dH6 * dH6_H5 # (D,) * (D,)
 
-    # Step 7: dH4 -> (D,)
-    dH5_H4 = 1.0 / (2 * np.sqrt(var + eps)) # (D,)
-    dH4 = dH5 * dH5_H4 # (D,) * (D,)
+    # Step 9: deps
+    dH5_eps = 1 # ()
+    deps = np.sum(dH5 * dH5_eps) # ()
 
-    # Step 8: dH3 -> (N, D)
+    # Step 10: dH4 -> (D,)
+    dH5_H4 = 1 # ()
+    dH4 = dH5 * dH5_H4 # (D,)
+
+    # Step 11: dH3 -> (N, D)
     dH4_H3 = (1.0 / N) * np.ones(shape=(N, D)) # (N, D)
-    dH3 = dH4 * dH4_H3 # (D,) * (N, D)
+    dH3 = dH4 * dH4_H3 # (N, D) * (D,)
 
-    # Step 9: dH2 -> (N, D)
-    dH7_H2 = 1.0 / np.sqrt(var + eps) # (N, D) * (D,)
+    # Step 12: dH2 -> (N, D)
+    dH8_H2 = 1.0 / np.sqrt(var + eps) # (D,)
     dH3_H2 = 2 * (x - mu) # (N, D)
-    dH2 = (dH7 * dH7_H2) + (dH3 * dH3_H2) # (N, D) * (N, D)
+    dH2 = (dH3 * dH3_H2) + (dH8 * dH8_H2) # (N, D) * (D,) + (N, D) + (D,)
 
-    # Step 10: dH1 -> (D,)
-    dH2_H1 = -1.0
+    # Step 13: dH1 -> (D,)
+    dH2_H1 = -1.0 # ()
     dH1 = dH2 * dH2_H1 # (N, D)
     dH1 = np.sum(dH1, axis=0) # (D,)
 
-    # Step 11: dH0 -> (N, D)
+    # Step 14: dH0 -> (N, D)
     dH1_H0 = (1.0 / N) * np.ones(shape=(N, D)) # (N, D)
-    dH2_H0 = 1.0
-    dH0 = (dH2 * dH2_H0) + (dH1 * dH1_H0) # (N, D) + (N, D)
+    dH2_H0 = 1.0 # ()
+    dH0 = (dH1 * dH1_H0) + (dH2 * dH2_H0) # (D,) * (N, D) + (N, D) * ()
 
     dx = dH0
 

@@ -17,7 +17,7 @@
 
 1. Try to write out the entire graph again and get the thing right.
   * Questions I currently have are:
-    * 1. When deriving the derivative for $dH_2$, why do we multiply by $dH_4$ and not $dH_3$? It just doesn't make sense to me even when I look at the computational graph.
+    * 1. When deriving the derivative for `dH_2`, why do we multiply by `dH_4` and not `dH_3`? It just doesn't make sense to me even when I look at the computational graph.
       * Draw the computational graph following a different method, and try to derive it from there.
       * Figured out the problem. When I was deriving $\partial H_8 / \partial H_7$, I kept on writing the result as $\hat{x}$ rather than $\gamma$. This comes from my confusion of simple differentiation. $H_8 = \gamma \hat{x}$ and $H_7 = \hat{x}$, but I kept on getting the two confused. For example:
       $$

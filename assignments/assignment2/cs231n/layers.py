@@ -210,23 +210,21 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         #######################################################################
         
         # Computational graph construction.
-        H0 = x # (N, D) / Starting point.
-        H1 = np.mean(H0, axis=0) # (D,) / Mean over all the rows (i.e. samples).
-        H2 = H0 - H1 # (N, D) / x - mu
-        H3 = np.square(H2) # (N, D) / (x - mu) ** 2
-        H4 = np.mean(H3, axis=0) # (D,) / Variance calculation.
-        H5 = H4 + eps # (D,) / Add numeric stability term.
-        H6 = np.sqrt(H5) # (D,) / Calculate square root.
-        H7 = 1.0 / H6 # (D,) / Create denominator.
-        H8 = H2 * H7 # (N, D) / Multiply element-wise.
-        H9 = H8 * gamma # (N, D) / Scale.
-        Z = H9 + beta # (N, D) / Shift.
+        H0 = x # (N, D)
+        H1 = np.mean(H0, axis=0) # (D,) Average over all samples (i.e. axis=0).
+        H2 = H0 - H1 # (N, D)
+        H3 = np.square(H2) # (N, D)
+        H4 = np.mean(H3, axis=0) # (D,)
+        H5 = np.sqrt(H4 + eps) # (D,)
+        H6 = 1.0 / H5 # (D,)
+        H7 = H2 * H6 # (N, D)
+        H8 = gamma * H7 # (N, D)
+        Z = H8 + beta # (N, D)
 
-        # Store values in more-readable variables.
-        mu = H1 # (D,)
-        var = H4 # (D,)
-        x_hat = H8 # (N, D)
-        out = Z # (N, D)
+        mu = H1
+        var = H4
+        x_hat = H7
+        out = Z
 
         cache = (x, mu, var, x_hat, gamma, eps)
 
@@ -291,57 +289,53 @@ def batchnorm_backward(dout, cache):
     x, mu, var, x_hat, gamma, eps = cache
     dZ = dout
 
-    # Step 1: beta
-    dbeta = np.sum(dZ, axis=0)
-    
-    # Step 2: H9
-    dZ_H9 = 1
-    dH9 = dZ * dZ_H9
+    # Step 1: dbeta -> (D,)
+    dbeta = np.sum(dZ, axis=0) # (D,)
 
-    # Step 3: gamma
-    dgamma = np.sum(dH9 * x_hat, axis=0)
+    # Step 2: dH8 -> (N, D)
+    dZ_H8 = 1 # (D,)
+    dH8 = dZ * dZ_H8 # (N, D) * (D,) = (N, D)
 
-    # Step 4: H8
-    dH9_H8 = gamma
-    dH8 = dH9 * dH9_H8
+    # Step 3: dgamma -> (D,)
+    dH8_gamma = x_hat # (D,)
+    dgamma = dH8 * dH8_gamma # (N, D) * (D,)
+    dgamma = np.sum(dgamma, axis=0) # We have to sum in order to match the dimensions.
 
-    # Step 5: H7
-    dH8_H7 = x - mu
-    dH7 = np.sum(dH8 * dH8_H7, axis=0)
+    # Step 4: dH7 -> (N, D)
+    dH8_H7 = gamma # (D,)
+    dH7 = dH8 * dH8_H7 # (N, D) * (N, D)
 
-    # Step 6: H6
-    dH7_H6 = -1.0 / np.square(np.sqrt(var + eps))
-    dH6 = dH7 * dH7_H6
+    # Step 5: dH6 -> (D,)
+    dH7_H6 = x - mu # (N, D)
+    dH6 = dH7 * dH7_H6 # (N, D) * (N, D)
+    dH6 = np.sum(dH6, axis=0) # (D,)
 
-    # Step 7: H5
-    dH6_H5 = 1.0 / (2 * np.sqrt(var + eps))
-    dH5 = dH6 * dH6_H5
+    # Step 6: dH5 -> (D,)
+    dH6_H5 = -1.0 / (var + eps) # (D,)
+    dH5 = dH6 * dH6_H5 # (D,) * (D,)
 
-    # Step 8: eps
-    dH5_eps = 1
-    deps = dH5 * dH5_eps
+    # Step 7: dH4 -> (D,)
+    dH5_H4 = 1.0 / (2 * np.sqrt(var + eps)) # (D,)
+    dH4 = dH5 * dH5_H4 # (D,) * (D,)
 
-    # Step 9: H4
-    dH5_H4 = (1.0 / N) * np.ones(shape=(N, D))
-    dH4 = dH5 * dH5_H4
+    # Step 8: dH3 -> (N, D)
+    dH4_H3 = (1.0 / N) * np.ones(shape=(N, D)) # (N, D)
+    dH3 = dH4 * dH4_H3 # (D,) * (N, D)
 
-    # Step 10: H3
-    dH4_H3 = 2 * (x - mu)
-    dH3 = dH4 * dH4_H3
+    # Step 9: dH2 -> (N, D)
+    dH7_H2 = 1.0 / np.sqrt(var + eps) # (N, D) * (D,)
+    dH3_H2 = 2 * (x - mu) # (N, D)
+    dH2 = (dH7 * dH7_H2) + (dH3 * dH3_H2) # (N, D) * (N, D)
 
-    # Step 11: H2
-    dH8_H2 = 1.0 / np.sqrt(var + eps)
-    dH3_H2 = 2 * (x - mu)
-    dH2 = (dH8 * dH8_H2) + (dH4 * dH3_H2)
+    # Step 10: dH1 -> (D,)
+    dH2_H1 = -1.0
+    dH1 = dH2 * dH2_H1 # (N, D)
+    dH1 = np.sum(dH1, axis=0) # (D,)
 
-    # Step 12: H1
-    dH2_H1 = -1
-    dH1 = np.sum(dH2, axis=0) * dH2_H1
-
-    # Step 13: H0
-    dH1_H0 = (1.0 / N) * np.ones(shape=(N, D))
-    dH2_H0 = 1
-    dH0 = (dH1 * dH1_H0) + (dH2 * dH2_H0)
+    # Step 11: dH0 -> (N, D)
+    dH1_H0 = (1.0 / N) * np.ones(shape=(N, D)) # (N, D)
+    dH2_H0 = 1.0
+    dH0 = (dH2 * dH2_H0) + (dH1 * dH1_H0) # (N, D) + (N, D)
 
     dx = dH0
 

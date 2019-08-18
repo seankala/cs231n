@@ -27,3 +27,9 @@
       \end{align}
       $$
       As you can see, I was differentiating the other way.
+
+
+### August 18th, 2019 (Sunday)
+
+1. Managed to finish the batch normalization segment of the assignment. Now all I have left is dropout and convolutional neural networks, along with the extra TensorFlow and PyTorch segments.
+  * This segment didn't take too long surprisingly. I think I really just need to force myself to fit the code together correctly.

@@ -215,15 +215,16 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         H2 = H0 - H1 # (N, D)
         H3 = np.square(H2) # (N, D)
         H4 = np.mean(H3, axis=0) # (D,)
-        H5 = np.sqrt(H4 + eps) # (D,)
-        H6 = 1.0 / H5 # (D,)
-        H7 = H2 * H6 # (N, D)
-        H8 = gamma * H7 # (N, D)
-        Z = H8 + beta # (N, D)
+        H5 = H4 + eps # (D,)
+        H6 = np.sqrt(H5) # (D,)
+        H7 = 1.0 / H6 # (D,)
+        H8 = H2 * H7 # (N, D)
+        H9 = gamma * H8 # (N, D)
+        Z = H9 + beta # (N, D)
 
         mu = H1
         var = H4
-        x_hat = H7
+        x_hat = H8
         out = Z
 
         cache = (x, mu, var, x_hat, gamma, eps)

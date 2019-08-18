@@ -250,6 +250,7 @@ class FullyConnectedNet(object):
 
         self.fc_cache = {} # Added in by Seankala.
         self.relu_cache = {} # Added in by Seankala.
+        self.bn_cache = {} # Added in by Seankala.
 
         ############################################################################
         # TODO: Initialize the parameters of the network, storing all values in    #
@@ -275,6 +276,10 @@ class FullyConnectedNet(object):
             self.params['W{}'.format(i + 1)] = W_curr
             self.params['b{}'.format(i + 1)] = b_curr
 
+            if self.use_batchnorm:
+              self.bn_cache['gamma{}'.format(i + 1)] = np.ones(shape=(H,))
+              self.bn_cache['beta{}'.format(i + 1)] = np.zeros(shape=(H,))
+
             next_dim = H
           else: # Initialization for intermediate layers.
             H = hidden_dims[i]
@@ -282,6 +287,10 @@ class FullyConnectedNet(object):
             b_curr = np.zeros(shape=(H,))
             self.params['W{}'.format(i + 1)] = W_curr
             self.params['b{}'.format(i + 1)] = b_curr
+
+            if self.use_batchnorm:
+              self.bn_cache['gamma{}'.format(i + 1)] = np.ones(shape=(H,))
+              self.bn_cache['beta{}'.format(i + 1)] = np.ones(shape=(H,))
 
             next_dim = H
 
@@ -348,13 +357,20 @@ class FullyConnectedNet(object):
         # self.bn_params[1] to the forward pass for the second batch normalization #
         # layer, etc.                                                              #
         ############################################################################
-        
+
         for i in range(self.num_layers - 1):
           W_curr = self.params['W{}'.format(i + 1)]
           b_curr = self.params['b{}'.format(i + 1)]
 
           # These two functions are one pass. We repeat this (L - 1) times.
           hidden_out, self.fc_cache['l{}'.format(i + 1)] = affine_forward(X, W_curr, b_curr)
+
+          # Add in batch normalization before the ReLU nonlinearity.
+          if self.use_batchnorm:
+            gamma = self.bn_cache['gamma{}'.format(i + 1)]
+            beta = self.bn_cache['gamma{}'.format(i + 1)]
+            hidden_out, self.bn_cache['l{}'.format(i + 1)] = batchnorm_forward(hidden_out, gamma, beta, self.bn_params[i])
+            
           relu_out, self.relu_cache['l{}'.format(i + 1)] = relu_forward(hidden_out)
 
           # Copy the new X to use in the next iteration.
@@ -407,6 +423,11 @@ class FullyConnectedNet(object):
             grads['b{}'.format(i)] = db
           else:
             dReLU = relu_backward(dX, self.relu_cache['l{}'.format(i)])
+
+            if self.use_batchnorm:
+              bn_cache = self.bn_cache['l{}'.format(i)]
+              dReLU, _, _ = batchnorm_backward(dReLU, bn_cache)
+
             dX, dW, db = affine_backward(dReLU, self.fc_cache['l{}'.format(i)])
             grads['W{}'.format(i)] = dW + (self.reg * W_curr)
             grads['b{}'.format(i)] = db

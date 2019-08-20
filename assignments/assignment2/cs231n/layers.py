@@ -129,7 +129,7 @@ def relu_backward(dout, cache):
     ###########################################################################
     # TODO: Implement the ReLU backward pass.                                 #
     ###########################################################################
-    
+
     # If you don't know how to calculate this I strongly recommend reading this
     #   answer:
     # https://math.stackexchange.com/questions/368432/derivative-of-max-function
@@ -208,7 +208,7 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         # variance, storing your result in the running_mean and running_var   #
         # variables.                                                          #
         #######################################################################
-        
+
         # Computational graph construction.
         H0 = x # (N, D)
         H1 = np.mean(H0, axis=0) # (D,) Average over all samples (i.e. axis=0).
@@ -245,7 +245,7 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         # then scale and shift the normalized data using gamma and beta.      #
         # Store the result in the out variable.                               #
         #######################################################################
-        
+
         x_hat = (x - running_mean) / np.sqrt(running_var + eps)
         out = gamma * x_hat + beta
 
@@ -284,7 +284,7 @@ def batchnorm_backward(dout, cache):
     # TODO: Implement the backward pass for batch normalization. Store the    #
     # results in the dx, dgamma, and dbeta variables.                         #
     ###########################################################################
-    
+
     N, D = dout.shape
 
     x, mu, var, x_hat, gamma, eps = cache
@@ -381,7 +381,7 @@ def batchnorm_backward_alt(dout, cache):
     # should be able to compute gradients with respect to the inputs in a     #
     # single statement; our implementation fits on a single 80-character line.#
     ###########################################################################
-    
+
     x, mu, var, x_hat, gamma, eps = cache
     dZ = dout
     N, D = dZ.shape
@@ -432,7 +432,10 @@ def dropout_forward(x, dropout_param):
         # TODO: Implement training phase forward pass for inverted dropout.   #
         # Store the dropout mask in the mask variable.                        #
         #######################################################################
-        pass
+
+        mask = np.random.binomial(1, 1 - p, size=x.shape)
+        out = x * mask
+
         #######################################################################
         #                           END OF YOUR CODE                          #
         #######################################################################
@@ -440,7 +443,9 @@ def dropout_forward(x, dropout_param):
         #######################################################################
         # TODO: Implement the test phase forward pass for inverted dropout.   #
         #######################################################################
-        pass
+
+        out = x
+
         #######################################################################
         #                            END OF YOUR CODE                         #
         #######################################################################
@@ -467,7 +472,9 @@ def dropout_backward(dout, cache):
         #######################################################################
         # TODO: Implement training phase backward pass for inverted dropout   #
         #######################################################################
-        pass
+
+        dx = dout * mask # We just pass the gradients of the neurons that weren't "dropped."
+
         #######################################################################
         #                          END OF YOUR CODE                           #
         #######################################################################

@@ -47,7 +47,7 @@ class TwoLayerNet(object):
         self.cache = {}
 
         ############################################################################
-        # TODO: Initialize the weights and biases of the two-layer net. Weights    #
+        # TO-DO: Initialize the weights and biases of the two-layer net. Weights    #
         # should be initialized from a Gaussian with standard deviation equal to   #
         # weight_scale, and biases should be initialized to zero. All weights and  #
         # biases should be stored in the dictionary self.params, with first layer  #
@@ -103,7 +103,7 @@ class TwoLayerNet(object):
         """
         scores = None
         ############################################################################
-        # TODO: Implement the forward pass for the two-layer net, computing the    #
+        # TO-DO: Implement the forward pass for the two-layer net, computing the    #
         # class scores for X and storing them in the scores variable.              #
         ############################################################################
 
@@ -120,7 +120,7 @@ class TwoLayerNet(object):
         b2 = self.params['b2']
 
         # Compute forward pass through network.
-        
+
         ################## Method 1: Compute the old-fashioned way. ################
         #X = np.reshape(X, (N, -1))
         #H0 = np.matmul(X, W1) # (N, D) x (D, H) = (N, H)
@@ -148,7 +148,7 @@ class TwoLayerNet(object):
 
         loss, grads = 0, {}
         ############################################################################
-        # TODO: Implement the backward pass for the two-layer net. Store the loss  #
+        # TO-DO: Implement the backward pass for the two-layer net. Store the loss  #
         # in the loss variable and gradients in the grads dictionary. Compute data #
         # loss using softmax, and make sure that grads[k] holds the gradients for  #
         # self.params[k]. Don't forget to add L2 regularization!                   #
@@ -251,9 +251,10 @@ class FullyConnectedNet(object):
         self.fc_cache = {} # Added in by Seankala.
         self.relu_cache = {} # Added in by Seankala.
         self.bn_cache = {} # Added in by Seankala.
+        self.dropout_cache = {} # Added in by Seankala.
 
         ############################################################################
-        # TODO: Initialize the parameters of the network, storing all values in    #
+        # TO-DO: Initialize the parameters of the network, storing all values in    #
         # the self.params dictionary. Store weights and biases for the first layer #
         # in W1 and b1; for the second layer use W2 and b2, etc. Weights should be #
         # initialized from a normal distribution with standard deviation equal to  #
@@ -269,30 +270,30 @@ class FullyConnectedNet(object):
         C = num_classes
 
         for i in range(self.num_layers - 1):
-          if i == 0: # Initialization for first layer.
-            H = hidden_dims[i]
-            W_curr = np.random.normal(loc=0.0, scale=weight_scale, size=(D, H))
-            b_curr = np.zeros(shape=(H,))
-            self.params['W{}'.format(i + 1)] = W_curr
-            self.params['b{}'.format(i + 1)] = b_curr
+            if i == 0: # Initialization for first layer.
+                H = hidden_dims[i]
+                W_curr = np.random.normal(loc=0.0, scale=weight_scale, size=(D, H))
+                b_curr = np.zeros(shape=(H,))
+                self.params['W{}'.format(i + 1)] = W_curr
+                self.params['b{}'.format(i + 1)] = b_curr
 
-            if self.use_batchnorm:
-              self.bn_cache['gamma{}'.format(i + 1)] = np.ones(shape=(H,))
-              self.bn_cache['beta{}'.format(i + 1)] = np.zeros(shape=(H,))
+                if self.use_batchnorm:
+                    self.bn_cache['gamma{}'.format(i + 1)] = np.ones(shape=(H,))
+                    self.bn_cache['beta{}'.format(i + 1)] = np.zeros(shape=(H,))
 
-            next_dim = H
-          else: # Initialization for intermediate layers.
-            H = hidden_dims[i]
-            W_curr = np.random.normal(loc=0.0, scale=weight_scale, size=(next_dim, H))
-            b_curr = np.zeros(shape=(H,))
-            self.params['W{}'.format(i + 1)] = W_curr
-            self.params['b{}'.format(i + 1)] = b_curr
+                next_dim = H
+            else: # Initialization for intermediate layers.
+                H = hidden_dims[i]
+                W_curr = np.random.normal(loc=0.0, scale=weight_scale, size=(next_dim, H))
+                b_curr = np.zeros(shape=(H,))
+                self.params['W{}'.format(i + 1)] = W_curr
+                self.params['b{}'.format(i + 1)] = b_curr
 
-            if self.use_batchnorm:
-              self.bn_cache['gamma{}'.format(i + 1)] = np.ones(shape=(H,))
-              self.bn_cache['beta{}'.format(i + 1)] = np.ones(shape=(H,))
+                if self.use_batchnorm:
+                    self.bn_cache['gamma{}'.format(i + 1)] = np.ones(shape=(H,))
+                    self.bn_cache['beta{}'.format(i + 1)] = np.ones(shape=(H,))
 
-            next_dim = H
+                next_dim = H
 
         # Initialization for last layer.
         W_last = np.random.normal(loc=0.0, scale=weight_scale, size=(next_dim, C))
@@ -346,7 +347,7 @@ class FullyConnectedNet(object):
 
         scores = None
         ############################################################################
-        # TODO: Implement the forward pass for the fully-connected net, computing  #
+        # TO-DO: Implement the forward pass for the fully-connected net, computing  #
         # the class scores for X and storing them in the scores variable.          #
         #                                                                          #
         # When using dropout, you'll need to pass self.dropout_param to each       #
@@ -359,23 +360,25 @@ class FullyConnectedNet(object):
         ############################################################################
 
         for i in range(self.num_layers - 1):
-          W_curr = self.params['W{}'.format(i + 1)]
-          b_curr = self.params['b{}'.format(i + 1)]
+            W_curr = self.params['W{}'.format(i + 1)]
+            b_curr = self.params['b{}'.format(i + 1)]
 
-          # These two functions are one pass. We repeat this (L - 1) times.
-          hidden_out, self.fc_cache['l{}'.format(i + 1)] = affine_forward(X, W_curr, b_curr)
+            # These two functions are one pass. We repeat this (L - 1) times.
+            hidden_out, self.fc_cache['l{}'.format(i + 1)] = affine_forward(X, W_curr, b_curr)
 
-          # Add in batch normalization before the ReLU nonlinearity.
-          if self.use_batchnorm:
-            gamma = self.bn_cache['gamma{}'.format(i + 1)]
-            beta = self.bn_cache['gamma{}'.format(i + 1)]
-            hidden_out, self.bn_cache['l{}'.format(i + 1)] = batchnorm_forward(hidden_out, gamma, beta, self.bn_params[i])
-            
-          relu_out, self.relu_cache['l{}'.format(i + 1)] = relu_forward(hidden_out)
+            # Add in batch normalization before the ReLU nonlinearity.
+            if self.use_batchnorm:
+                gamma = self.bn_cache['gamma{}'.format(i + 1)]
+                beta = self.bn_cache['gamma{}'.format(i + 1)]
+                hidden_out, self.bn_cache['l{}'.format(i + 1)] = batchnorm_forward(hidden_out, gamma, beta, self.bn_params[i])
 
-          # Copy the new X to use in the next iteration.
-          X = relu_out.copy()
-          
+            relu_out, self.relu_cache['l{}'.format(i + 1)] = relu_forward(hidden_out)
+
+            if self.use_dropout:
+                relu_out, self.dropout_cache['l{}'.format(i + 1)] = dropout_forward(relu_out, self.dropout_param)
+
+            # Copy the new X to use in the next iteration.
+            X = relu_out.copy()
         # After looping through the affine-ReLU blocks (L - 1) times, compute the scores for the output.
         W_last = self.params['W{}'.format(self.num_layers)]
         b_last = self.params['b{}'.format(self.num_layers)]
@@ -391,7 +394,7 @@ class FullyConnectedNet(object):
 
         loss, grads = 0.0, {}
         ############################################################################
-        # TODO: Implement the backward pass for the fully-connected net. Store the #
+        # TO-DO: Implement the backward pass for the fully-connected net. Store the #
         # loss in the loss variable and gradients in the grads dictionary. Compute #
         # data loss using softmax, and make sure that grads[k] holds the gradients #
         # for self.params[k]. Don't forget to add L2 regularization!               #
@@ -403,7 +406,7 @@ class FullyConnectedNet(object):
         # automated tests, make sure that your L2 regularization includes a factor #
         # of 0.5 to simplify the expression for the gradient.                      #
         ############################################################################
-        
+
         # I initially had a 0.5 term being multiplied to (self.reg * W_curr) when storing
         #   the gradients. This was causing the subsequent gradients to have high relative
         #   error. Adding in the 0.5 term once in the loss is enough.
@@ -412,25 +415,28 @@ class FullyConnectedNet(object):
         loss, dZ = softmax_loss(scores, y)
 
         for i in range(self.num_layers, 0, -1):
-          W_curr = self.params['W{}'.format(i)]
-          b_curr = self.params['b{}'.format(i)]
-          reg_term = 0.5 * self.reg * np.sum(W_curr * W_curr)
-          loss += reg_term
+            W_curr = self.params['W{}'.format(i)]
+            b_curr = self.params['b{}'.format(i)]
+            reg_term = 0.5 * self.reg * np.sum(W_curr * W_curr)
+            loss += reg_term
 
-          if i == self.num_layers: # Last output layer.
-            dX, dW, db = affine_backward(dZ, self.fc_cache['last'])
-            grads['W{}'.format(i)] = dW + (self.reg * W_curr)
-            grads['b{}'.format(i)] = db
-          else:
-            dReLU = relu_backward(dX, self.relu_cache['l{}'.format(i)])
+            if i == self.num_layers: # Last output layer.
+                dX, dW, db = affine_backward(dZ, self.fc_cache['last'])
+                grads['W{}'.format(i)] = dW + (self.reg * W_curr)
+                grads['b{}'.format(i)] = db
+            else:
+                if self.use_dropout:
+                    dX = dropout_backward(dX, self.dropout_cache['l{}'.format(i)])
 
-            if self.use_batchnorm:
-              bn_cache = self.bn_cache['l{}'.format(i)]
-              dReLU, _, _ = batchnorm_backward(dReLU, bn_cache)
+                dReLU = relu_backward(dX, self.relu_cache['l{}'.format(i)])
 
-            dX, dW, db = affine_backward(dReLU, self.fc_cache['l{}'.format(i)])
-            grads['W{}'.format(i)] = dW + (self.reg * W_curr)
-            grads['b{}'.format(i)] = db
+                if self.use_batchnorm:
+                    bn_cache = self.bn_cache['l{}'.format(i)]
+                    dReLU, _, _ = batchnorm_backward(dReLU, bn_cache)
+
+                dX, dW, db = affine_backward(dReLU, self.fc_cache['l{}'.format(i)])
+                grads['W{}'.format(i)] = dW + (self.reg * W_curr)
+                grads['b{}'.format(i)] = db
 
         ############################################################################
         #                             END OF YOUR CODE                             #

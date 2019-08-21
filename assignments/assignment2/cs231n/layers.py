@@ -22,7 +22,7 @@ def affine_forward(x, w, b):
     """
     out = None
     ###########################################################################
-    # TODO: Implement the affine forward pass. Store the result in out. You   #
+    # TO-DO: Implement the affine forward pass. Store the result in out. You   #
     # will need to reshape the input into rows.                               #
     ###########################################################################
     
@@ -63,7 +63,7 @@ def affine_backward(dout, cache):
     x, w, b = cache
     dx, dw, db = None, None, None
     ###########################################################################
-    # TODO: Implement the affine backward pass.                               #
+    # TO-DO: Implement the affine backward pass.                               #
     ###########################################################################
     
     # Compute nodes of computational graph.
@@ -102,7 +102,7 @@ def relu_forward(x):
     """
     out = None
     ###########################################################################
-    # TODO: Implement the ReLU forward pass.                                  #
+    # TO-DO: Implement the ReLU forward pass.                                  #
     ###########################################################################
     
     out = np.maximum(0, x)
@@ -127,7 +127,7 @@ def relu_backward(dout, cache):
     """
     dx, x = None, cache
     ###########################################################################
-    # TODO: Implement the ReLU backward pass.                                 #
+    # TO-DO: Implement the ReLU backward pass.                                 #
     ###########################################################################
 
     # If you don't know how to calculate this I strongly recommend reading this
@@ -194,7 +194,7 @@ def batchnorm_forward(x, gamma, beta, bn_param):
     out, cache = None, None
     if mode == 'train':
         #######################################################################
-        # TODO: Implement the training-time forward pass for batch norm.      #
+        # TO-DO: Implement the training-time forward pass for batch norm.      #
         # Use minibatch statistics to compute the mean and variance, use      #
         # these statistics to normalize the incoming data, and scale and      #
         # shift the normalized data using gamma and beta.                     #
@@ -240,7 +240,7 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         #######################################################################
     elif mode == 'test':
         #######################################################################
-        # TODO: Implement the test-time forward pass for batch normalization. #
+        # TO-DO: Implement the test-time forward pass for batch normalization. #
         # Use the running mean and variance to normalize the incoming data,   #
         # then scale and shift the normalized data using gamma and beta.      #
         # Store the result in the out variable.                               #
@@ -281,7 +281,7 @@ def batchnorm_backward(dout, cache):
     """
     dx, dgamma, dbeta = None, None, None
     ###########################################################################
-    # TODO: Implement the backward pass for batch normalization. Store the    #
+    # TO-DO: Implement the backward pass for batch normalization. Store the    #
     # results in the dx, dgamma, and dbeta variables.                         #
     ###########################################################################
 
@@ -374,7 +374,7 @@ def batchnorm_backward_alt(dout, cache):
     """
     dx, dgamma, dbeta = None, None, None
     ###########################################################################
-    # TODO: Implement the backward pass for batch normalization. Store the    #
+    # TO-DO: Implement the backward pass for batch normalization. Store the    #
     # results in the dx, dgamma, and dbeta variables.                         #
     #                                                                         #
     # After computing the gradient with respect to the centered inputs, you   #
@@ -429,7 +429,7 @@ def dropout_forward(x, dropout_param):
 
     if mode == 'train':
         #######################################################################
-        # TODO: Implement training phase forward pass for inverted dropout.   #
+        # TO-DO: Implement training phase forward pass for inverted dropout.   #
         # Store the dropout mask in the mask variable.                        #
         #######################################################################
 
@@ -441,7 +441,7 @@ def dropout_forward(x, dropout_param):
         #######################################################################
     elif mode == 'test':
         #######################################################################
-        # TODO: Implement the test phase forward pass for inverted dropout.   #
+        # TO-DO: Implement the test phase forward pass for inverted dropout.   #
         #######################################################################
 
         out = x
@@ -470,10 +470,14 @@ def dropout_backward(dout, cache):
     dx = None
     if mode == 'train':
         #######################################################################
-        # TODO: Implement training phase backward pass for inverted dropout   #
+        # TO-DO: Implement training phase backward pass for inverted dropout   #
         #######################################################################
 
-        dx = dout * mask # We just pass the gradients of the neurons that weren't "dropped."
+        # We just pass the gradients of the neurons that weren't "dropped."
+        #   Dropout mechanism doesn't exactly drop the weights themselves. Rather,
+        #   it drops the activations of the neurons. The mask that is used for the
+        #   forward pass is also used for the backward pass.
+        dx = dout * mask
 
         #######################################################################
         #                          END OF YOUR CODE                           #
@@ -508,7 +512,7 @@ def conv_forward_naive(x, w, b, conv_param):
     """
     out = None
     ###########################################################################
-    # TODO: Implement the convolutional forward pass.                         #
+    # TO-DO: Implement the convolutional forward pass.                         #
     # Hint: you can use the function np.pad for padding.                      #
     ###########################################################################
     pass
@@ -534,7 +538,7 @@ def conv_backward_naive(dout, cache):
     """
     dx, dw, db = None, None, None
     ###########################################################################
-    # TODO: Implement the convolutional backward pass.                        #
+    # TO-DO: Implement the convolutional backward pass.                        #
     ###########################################################################
     pass
     ###########################################################################
@@ -560,7 +564,7 @@ def max_pool_forward_naive(x, pool_param):
     """
     out = None
     ###########################################################################
-    # TODO: Implement the max pooling forward pass                            #
+    # TO-DO: Implement the max pooling forward pass                            #
     ###########################################################################
     pass
     ###########################################################################
@@ -583,7 +587,7 @@ def max_pool_backward_naive(dout, cache):
     """
     dx = None
     ###########################################################################
-    # TODO: Implement the max pooling backward pass                           #
+    # TO-DO: Implement the max pooling backward pass                           #
     ###########################################################################
     pass
     ###########################################################################
@@ -617,7 +621,7 @@ def spatial_batchnorm_forward(x, gamma, beta, bn_param):
     out, cache = None, None
 
     ###########################################################################
-    # TODO: Implement the forward pass for spatial batch normalization.       #
+    # TO-DO: Implement the forward pass for spatial batch normalization.       #
     #                                                                         #
     # HINT: You can implement spatial batch normalization using the vanilla   #
     # version of batch normalization defined above. Your implementation should#
@@ -647,7 +651,7 @@ def spatial_batchnorm_backward(dout, cache):
     dx, dgamma, dbeta = None, None, None
 
     ###########################################################################
-    # TODO: Implement the backward pass for spatial batch normalization.      #
+    # TO-DO: Implement the backward pass for spatial batch normalization.      #
     #                                                                         #
     # HINT: You can implement spatial batch normalization using the vanilla   #
     # version of batch normalization defined above. Your implementation should#

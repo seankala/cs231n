@@ -39,7 +39,7 @@ class ThreeLayerConvNet(object):
         self.dtype = dtype
 
         ############################################################################
-        # TODO: Initialize weights and biases for the three-layer convolutional    #
+        # TO-DO: Initialize weights and biases for the three-layer convolutional    #
         # network. Weights should be initialized from a Gaussian with standard     #
         # deviation equal to weight_scale; biases should be initialized to zero.   #
         # All weights and biases should be stored in the dictionary self.params.   #
@@ -76,7 +76,7 @@ class ThreeLayerConvNet(object):
 
         scores = None
         ############################################################################
-        # TODO: Implement the forward pass for the three-layer convolutional net,  #
+        # TO-DO: Implement the forward pass for the three-layer convolutional net,  #
         # computing the class scores for X and storing them in the scores          #
         # variable.                                                                #
         ############################################################################
@@ -90,7 +90,7 @@ class ThreeLayerConvNet(object):
 
         loss, grads = 0, {}
         ############################################################################
-        # TODO: Implement the backward pass for the three-layer convolutional net, #
+        # TO-DO: Implement the backward pass for the three-layer convolutional net, #
         # storing the loss and gradients in the loss and grads variables. Compute  #
         # data loss using softmax, and make sure that grads[k] holds the gradients #
         # for self.params[k]. Don't forget to add L2 regularization!               #

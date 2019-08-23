@@ -63,7 +63,7 @@ def affine_backward(dout, cache):
     x, w, b = cache
     dx, dw, db = None, None, None
     ###########################################################################
-    # TO-DO: Implement the affine backward pass.                               #
+    # TO-DO: Implement the affine backward pass.                              #
     ###########################################################################
     
     # Compute nodes of computational graph.
@@ -75,7 +75,7 @@ def affine_backward(dout, cache):
 
     # Compute backward pass accordingly.
     dZ = dout # (N, M)
-    db = np.sum(dZ, axis=0) # (M,) Remember that axis=0 means 
+    db = np.sum(dZ, axis=0) # (M,) Remember that axis=0 means across the samples.
     dH = dZ # (N, M)
     dw = np.matmul(X.T, dH) # (D, N) x (N, M) = (D, M)
     dX = np.matmul(dH, w.T) # (N, M) x (M, D) = (N, D)
@@ -515,7 +515,37 @@ def conv_forward_naive(x, w, b, conv_param):
     # TO-DO: Implement the convolutional forward pass.                         #
     # Hint: you can use the function np.pad for padding.                      #
     ###########################################################################
-    pass
+
+    # Go back to Lecture 5 if this is confusing for you.
+
+    N, C, H, W = x.shape
+    F, _, HH, WW = w.shape
+
+    stride = conv_param['stride']
+    pad = conv_param['pad']
+
+    # For each sample, the output is going to be of size (C, H_prime, W_prime).
+    H_prime = 1 + (H + 2 * pad - HH) // stride
+    W_prime = 1 + (H + 2 * pad - WW) // stride
+
+    out = np.zeros(shape=(N, F, H_prime, W_prime))
+
+    # We only want to pad the height and width, not the number of samples or channels.
+    pad_width = ((0, 0), (0, 0), (pad, pad), (pad, pad))
+    x_pad = np.pad(array=x, pad_width=pad_width, mode='constant', constant_values=0)
+
+    for n in range(N):
+        sample = x_pad[n, :, :, :]
+        for f in range(F):
+            filter = w[f, :, :, :]
+            bias = b[f]
+            for i in range(H_prime):
+                for j in range(W_prime):
+                    patch = sample[:, (i * stride):(i * stride + HH), (j * stride):(j * stride + WW)]
+                    prod = patch * filter # Choose which filter we're using and do element-wise mult.
+                    output = np.sum(prod) + bias # Sum to complete dot product and add bias term.
+                    out[n, f, i, j] = output
+
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################

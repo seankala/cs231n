@@ -570,7 +570,37 @@ def conv_backward_naive(dout, cache):
     ###########################################################################
     # TO-DO: Implement the convolutional backward pass.                        #
     ###########################################################################
-    pass
+    
+    dZ = dout # I prefer dZ over dout.
+    x, w, b, conv_param = cache
+    
+    N, C, H, W = x.shape
+    F, _, HH, WW = w.shape
+    _, _, H_prime, W_prime = dZ.shape
+
+    pad = conv_param['pad']
+    stride = conv_param['stride']
+
+    pad_width = ((0,), (0,), (pad,), (pad,))
+    x_pad = np.pad(array=x, pad_width=pad_width, mode='constant', constant_values=0)
+    
+    dx = np.zeros(shape=x.shape)
+    dw = np.zeros(shape=w.shape)
+    db = np.zeros(shape=b.shape)
+    dx_pad = np.zeros(shape=x_pad.shape)
+
+    for n in range(N):
+      for f in range(F):
+        filter = w[f, :, :, :]
+        db[f] += np.sum(dZ[n, f])
+        for i in range(H_prime):
+          for j in range(W_prime):
+            upgrad = dZ[n, f, i, j] # Upstream gradient.
+            dw[f, :, :, :] += x_pad[n, :, (i * stride):(i * stride + HH), (j * stride):(j * stride + WW)] * upgrad
+            dx_pad[n, :, (i * stride):(i * stride + HH), (j * stride):(j * stride + WW)] += filter * upgrad
+
+    dx = dx_pad[:, :, pad:(pad + H), pad:(pad + W)]
+
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################

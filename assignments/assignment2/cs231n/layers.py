@@ -518,15 +518,15 @@ def conv_forward_naive(x, w, b, conv_param):
 
     # Go back to Lecture 5 if this is confusing for you.
 
-    N, C, H, W = x.shape
+    N, _, H, W = x.shape
     F, _, HH, WW = w.shape
 
-    stride = conv_param['stride']
     pad = conv_param['pad']
+    s = conv_param['stride']
 
     # For each sample, the output is going to be of size (C, H_prime, W_prime).
-    H_prime = 1 + (H + 2 * pad - HH) // stride
-    W_prime = 1 + (H + 2 * pad - WW) // stride
+    H_prime = 1 + (H + 2 * pad - HH) // s
+    W_prime = 1 + (W + 2 * pad - WW) // s
 
     out = np.zeros(shape=(N, F, H_prime, W_prime))
 
@@ -537,12 +537,12 @@ def conv_forward_naive(x, w, b, conv_param):
     for n in range(N):
         sample = x_pad[n, :, :, :]
         for f in range(F):
-            filter = w[f, :, :, :]
+            filt = w[f, :, :, :]
             bias = b[f]
             for i in range(H_prime):
                 for j in range(W_prime):
-                    patch = sample[:, (i * stride):(i * stride + HH), (j * stride):(j * stride + WW)]
-                    prod = patch * filter # Choose which filter we're using and do element-wise mult.
+                    patch = sample[:, (i * s):(i * s + HH), (j * s):(j * s + WW)]
+                    prod = patch * filt # Choose which filter we're using and do element-wise mult.
                     output = np.sum(prod) + bias # Sum to complete dot product and add bias term.
                     out[n, f, i, j] = output
 
@@ -574,14 +574,14 @@ def conv_backward_naive(dout, cache):
     dZ = dout # I prefer dZ over dout.
     x, w, b, conv_param = cache
     
-    N, C, H, W = x.shape
+    N, _, H, W = x.shape
     F, _, HH, WW = w.shape
     _, _, H_prime, W_prime = dZ.shape
 
     pad = conv_param['pad']
-    stride = conv_param['stride']
+    s = conv_param['stride']
 
-    pad_width = ((0,), (0,), (pad,), (pad,))
+    pad_width = ((0, 0), (0, 0), (pad, pad), (pad, pad))
     x_pad = np.pad(array=x, pad_width=pad_width, mode='constant', constant_values=0)
     
     dx = np.zeros(shape=x.shape)
@@ -590,16 +590,17 @@ def conv_backward_naive(dout, cache):
     dx_pad = np.zeros(shape=x_pad.shape)
 
     for n in range(N):
+      sample = x_pad[n, :, :, :]
       for f in range(F):
-        filter = w[f, :, :, :]
-        db[f] += np.sum(dZ[n, f])
+        filt = w[f, :, :, :]
+        db[f] += np.sum(dZ[n, f, :, :])
         for i in range(H_prime):
           for j in range(W_prime):
             upgrad = dZ[n, f, i, j] # Upstream gradient.
-            dw[f, :, :, :] += x_pad[n, :, (i * stride):(i * stride + HH), (j * stride):(j * stride + WW)] * upgrad
-            dx_pad[n, :, (i * stride):(i * stride + HH), (j * stride):(j * stride + WW)] += filter * upgrad
+            dw[f, :, :, :] += sample[:, (i * s):(i * s + HH), (j * s):(j * s + WW)] * upgrad
+            dx_pad[n, :, (i * s):(i * s + HH), (j * s):(j * s + WW)] += filt * upgrad
 
-    dx = dx_pad[:, :, pad:(pad + H), pad:(pad + W)]
+    dx = dx_pad[:, :, pad:(pad + H), pad:(pad + W)] # Take out original data without pads.
 
     ###########################################################################
     #                             END OF YOUR CODE                            #

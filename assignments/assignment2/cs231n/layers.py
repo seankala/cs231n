@@ -596,9 +596,9 @@ def conv_backward_naive(dout, cache):
             db[f] += np.sum(dZ[n, f, :, :])
             for i in range(H_prime):
                 for j in range(W_prime):
-                    upgrad = dZ[n, f, i, j] # Upstream gradient.
-                    patch = sample[:, (i * s):(i * s + HH), (j * s):(j * s + WW)] # Current patch of the sample.
-                    dw[f, :, :, :] += patch * upgrad # Multiply the upstream gradient by the patch to get weight grad.
+                    upgrad = dZ[n, f, i, j]
+                    patch = sample[:, (i * s):(i * s + HH), (j * s):(j * s + WW)]
+                    dw[f, :, :, :] += patch * upgrad
                     dx_pad[n, :, (i * s):(i * s + HH), (j * s):(j * s + WW)] += filt * upgrad
 
     dx = dx_pad[:, :, pad:(pad + H), pad:(pad + W)] # Take out original data without pads.
@@ -628,7 +628,27 @@ def max_pool_forward_naive(x, pool_param):
     ###########################################################################
     # TO-DO: Implement the max pooling forward pass                            #
     ###########################################################################
-    pass
+
+    N, C, H, W = x.shape
+
+    H_pool = pool_param['pool_height']
+    W_pool = pool_param['pool_width']
+    s = pool_param['stride']
+
+    H_out = 1 + (H - H_pool) // s
+    W_out = 1 + (W - W_pool) // s
+
+    out = np.zeros(shape=(N, C, H_out, W_out))
+
+    for n in range(N):
+        sample = x[n, :, :, :]
+        for c in range(C):
+            channel = sample[c, :, :]
+            for h in range(H_out):
+                for w in range(W_out):
+                    patch = channel[(h * s):(h * s + H_pool), (w * s):(w * s + W_pool)]
+                    out[n, c, h, w] = np.max(patch)
+
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
@@ -651,7 +671,35 @@ def max_pool_backward_naive(dout, cache):
     ###########################################################################
     # TO-DO: Implement the max pooling backward pass                           #
     ###########################################################################
-    pass
+
+    x, pool_param = cache
+    dx = np.zeros(shape=x.shape)
+    dZ = dout
+
+    s = pool_param['stride']
+    H_pool = pool_param['pool_height']   
+    W_pool = pool_param['pool_width']
+
+    N, C, H, W = x.shape
+    _, _, H_out, W_out = dZ.shape
+
+    # The np.unravel_index function is what helps us recover the original index of
+    #   the max value before conducting pooling.
+    # Docs: https://docs.scipy.org/doc/numpy/reference/generated/numpy.unravel_index.html
+    # SO Answer: https://stackoverflow.com/questions/48135736/what-is-an-intuitive-explanation-of-np-unravel-index
+
+    for n in range(N):
+        sample = x[n, :, :, :]
+        for c in range(C):
+            channel = sample[c, :, :]
+            for h in range(H_out):
+                for w in range(W_out):
+                    upgrad = dZ[n, c, h, w]
+                    patch = channel[(h * s):(h * s + H_pool), (w * s):(w * s + W_pool)]
+                    indices = np.argmax(patch)
+                    idx = np.unravel_index(indices=indices, shape=patch.shape)
+                    dx[n, c, (h * s):(h * s + H_pool), (w * s):(w * s + W_pool)][idx] = upgrad
+
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################

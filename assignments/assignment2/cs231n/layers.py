@@ -570,10 +570,10 @@ def conv_backward_naive(dout, cache):
     ###########################################################################
     # TO-DO: Implement the convolutional backward pass.                        #
     ###########################################################################
-    
+
     dZ = dout # I prefer dZ over dout.
     x, w, b, conv_param = cache
-    
+
     N, _, H, W = x.shape
     F, _, HH, WW = w.shape
     _, _, H_prime, W_prime = dZ.shape
@@ -583,22 +583,23 @@ def conv_backward_naive(dout, cache):
 
     pad_width = ((0, 0), (0, 0), (pad, pad), (pad, pad))
     x_pad = np.pad(array=x, pad_width=pad_width, mode='constant', constant_values=0)
-    
+
     dx = np.zeros(shape=x.shape)
     dw = np.zeros(shape=w.shape)
     db = np.zeros(shape=b.shape)
     dx_pad = np.zeros(shape=x_pad.shape)
 
     for n in range(N):
-      sample = x_pad[n, :, :, :]
-      for f in range(F):
-        filt = w[f, :, :, :]
-        db[f] += np.sum(dZ[n, f, :, :])
-        for i in range(H_prime):
-          for j in range(W_prime):
-            upgrad = dZ[n, f, i, j] # Upstream gradient.
-            dw[f, :, :, :] += sample[:, (i * s):(i * s + HH), (j * s):(j * s + WW)] * upgrad
-            dx_pad[n, :, (i * s):(i * s + HH), (j * s):(j * s + WW)] += filt * upgrad
+        sample = x_pad[n, :, :, :]
+        for f in range(F):
+            filt = w[f, :, :, :]
+            db[f] += np.sum(dZ[n, f, :, :])
+            for i in range(H_prime):
+                for j in range(W_prime):
+                    upgrad = dZ[n, f, i, j] # Upstream gradient.
+                    patch = sample[:, (i * s):(i * s + HH), (j * s):(j * s + WW)] # Current patch of the sample.
+                    dw[f, :, :, :] += patch * upgrad # Multiply the upstream gradient by the patch to get weight grad.
+                    dx_pad[n, :, (i * s):(i * s + HH), (j * s):(j * s + WW)] += filt * upgrad
 
     dx = dx_pad[:, :, pad:(pad + H), pad:(pad + W)] # Take out original data without pads.
 

@@ -254,12 +254,13 @@ class Solver(object):
         return acc
 
 
-    def train(self, conv=False):
+    def train(self, conv=False): # Modified by Seankala.
         """
         Run optimization to train the model.
         """
         num_train = self.X_train.shape[0]
 
+        # Added in by Seankala.
         if conv:
             iterations_per_epoch = 200
         else:
@@ -288,16 +289,16 @@ class Solver(object):
             first_it = (t == 0)
             last_it = (t == num_iterations - 1)
             if first_it or last_it or epoch_end:
-                train_acc = self.check_accuracy(self.X_train, self.y_train,
+                train_acc = self.check_accuracy(self.X_train, self.y_train, \
                     num_samples=self.num_train_samples)
-                val_acc = self.check_accuracy(self.X_val, self.y_val,
+                val_acc = self.check_accuracy(self.X_val, self.y_val, \
                     num_samples=self.num_val_samples)
                 self.train_acc_history.append(train_acc)
                 self.val_acc_history.append(val_acc)
                 self._save_checkpoint()
 
                 if self.verbose:
-                    print('(Epoch %d / %d) train acc: %f; val_acc: %f' % (
+                    print('(Epoch %d / %d) train acc: %f; val_acc: %f' % ( \
                            self.epoch, self.num_epochs, train_acc, val_acc))
 
                 # Keep track of the best model

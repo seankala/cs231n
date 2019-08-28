@@ -94,17 +94,17 @@ class ThreeLayerConvNet(object):
         # computing the class scores for X and storing them in the scores          #
         # variable.                                                                #
         ############################################################################
-        
+
         # conv - relu - 2x2 max pool - affine - relu - affine - softmax
 
-        conv_out, conv_cache = conv_forward_fast(X, W1, b1, conv_param)
-        relu1_out, relu1_cache = relu_forward(conv_out)
-        max_pool_out, max_pool_cache = max_pool_forward_fast(relu1_out, pool_param)
-        affine1_out, affine1_cache = affine_forward(max_pool_out, W2, b2)
-        relu2_out, relu2_cache = relu_forward(affine1_out)
-        affine2_out, affine2_cache = affine_forward(relu2_out, W3, b3)
+        conv = conv_param
+        pool = pool_param
 
-        scores = affine2_out
+        conv_relu_pool_out, conv_relu_pool_cache = conv_relu_pool_forward(X, W1, b1, conv, pool)
+        aff_relu_out, aff_relu_cache = affine_relu_forward(conv_relu_pool_out, W2, b2)
+        Z, out_cache = affine_forward(aff_relu_out, W3, b3)
+
+        scores = Z
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
@@ -123,12 +123,9 @@ class ThreeLayerConvNet(object):
         loss, dZ = softmax_loss(scores, y)
         loss += (1/2) * self.reg * (np.sum(W1 * W1) + np.sum(W2 * W2) + np.sum(W3 * W3))
 
-        daff2, dW3, db3 = affine_backward(dZ, affine2_cache)
-        drelu2 = relu_backward(daff2, relu2_cache)
-        daff1, dW2, db2 = affine_backward(drelu2, affine1_cache)
-        dmaxpool = max_pool_backward_fast(daff1, max_pool_cache)
-        drelu1 = relu_backward(dmaxpool, relu1_cache)
-        dx, dW1, db1 = conv_backward_fast(drelu1, conv_cache)
+        daff, dW3, db3 = affine_backward(dZ, out_cache)
+        daff_relu, dW2, db2 = affine_relu_backward(daff, aff_relu_cache)
+        dconv, dW1, db1 = conv_relu_pool_backward(daff_relu, conv_relu_pool_cache)
 
         dW1 += self.reg * W1
         dW2 += self.reg * W2

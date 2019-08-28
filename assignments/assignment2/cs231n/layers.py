@@ -65,7 +65,7 @@ def affine_backward(dout, cache):
     ###########################################################################
     # TO-DO: Implement the affine backward pass.                              #
     ###########################################################################
-    
+
     # Compute nodes of computational graph.
     N = x.shape[0]
 
@@ -187,9 +187,6 @@ def batchnorm_forward(x, gamma, beta, bn_param):
     N, D = x.shape
     running_mean = bn_param.get('running_mean', np.zeros(D, dtype=x.dtype))
     running_var = bn_param.get('running_var', np.zeros(D, dtype=x.dtype))
-
-    # Added in by Seankala.
-    # These functions represent nodes in 
 
     out, cache = None, None
     if mode == 'train':
@@ -477,6 +474,7 @@ def dropout_backward(dout, cache):
         #   Dropout mechanism doesn't exactly drop the weights themselves. Rather,
         #   it drops the activations of the neurons. The mask that is used for the
         #   forward pass is also used for the backward pass.
+
         dx = dout * mask
 
         #######################################################################
@@ -737,7 +735,15 @@ def spatial_batchnorm_forward(x, gamma, beta, bn_param):
     # version of batch normalization defined above. Your implementation should#
     # be very short; ours is less than five lines.                            #
     ###########################################################################
-    pass
+    
+    mode = bn_param['mode']
+    eps = bn_param.get('eps', 1e-5)
+    momentum = bn_param.get('momentum', 0.9)
+
+    N, C, H, W = x.shape
+    running_mean = bn_param.get('running_mean', np.zeros(shape=(1, C, 1, 1), dtype=x.dtype))
+    running_var = bn_param.get('running_var', np.zeros(shape=(1, C, 1, 1), dtype=x.dtype))
+
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################

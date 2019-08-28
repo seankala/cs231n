@@ -254,12 +254,17 @@ class Solver(object):
         return acc
 
 
-    def train(self):
+    def train(self, conv=False):
         """
         Run optimization to train the model.
         """
         num_train = self.X_train.shape[0]
-        iterations_per_epoch = max(num_train // self.batch_size, 1)
+
+        if conv:
+            iterations_per_epoch = 500
+        else:
+            iterations_per_epoch = max(num_train // self.batch_size, 1)
+
         num_iterations = self.num_epochs * iterations_per_epoch
 
         for t in range(num_iterations):
@@ -267,8 +272,8 @@ class Solver(object):
 
             # Maybe print training loss
             if self.verbose and t % self.print_every == 0:
-                print('(Iteration %d / %d) loss: %f' % (
-                       t + 1, num_iterations, self.loss_history[-1]))
+                print('(Iteration %d / %d) loss: %f' % \
+                    (t + 1, num_iterations, self.loss_history[-1]))
 
             # At the end of every epoch, increment the epoch counter and decay
             # the learning rate.

@@ -261,7 +261,7 @@ class Solver(object):
         num_train = self.X_train.shape[0]
 
         if conv:
-            iterations_per_epoch = 500
+            iterations_per_epoch = 200
         else:
             iterations_per_epoch = max(num_train // self.batch_size, 1)
 

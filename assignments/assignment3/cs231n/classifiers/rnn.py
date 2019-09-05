@@ -1,4 +1,3 @@
-from builtins import range
 from builtins import object
 import numpy as np
 
@@ -117,7 +116,7 @@ class CaptioningRNN(object):
 
         loss, grads = 0.0, {}
         ############################################################################
-        # TODO: Implement the forward and backward passes for the CaptioningRNN.   #
+        # TO-DO: Implement the forward and backward passes for the CaptioningRNN.  #
         # In the forward pass you will need to do the following:                   #
         # (1) Use an affine transformation to compute the initial hidden state     #
         #     from the image features. This should produce an array of shape (N, H)#
@@ -137,7 +136,50 @@ class CaptioningRNN(object):
         # defined above to store loss and gradients; grads[k] should give the      #
         # gradients for self.params[k].                                            #
         ############################################################################
-        pass
+
+        cache = {}
+
+        # ======================  F O R W A R D   P A S S ======================== #
+
+        # Step 1: Use an affine transformation to compute initial hidden state.
+        h0, cache['h0'] = affine_forward(features, W_proj, b_proj)
+
+        # Step 2: Transform words into embedding vectors.
+        words, cache['word_embedding'] = word_embedding_forward(captions_in, W_embed)
+
+        # Step 3: Produce hidden states for all timesteps.
+        rnn_out, cache['rnn'] = rnn_forward(words, h0, Wx, Wh, b)
+
+        # Step 4: Use temporal affine transformation to compute scores.
+        scores, cache['scores'] = temporal_affine_forward(rnn_out, W_vocab, b_vocab)
+
+        # Step 5: Use temporal softmax to calculate scores.
+        loss, dout = temporal_softmax_loss(scores, captions_out, mask, verbose=False)
+
+        # =====================  B A C K W A R D   P A S S ======================= #
+
+        # Step 1: Go backwards on the last affine layer.
+        dscores, dW_vocab, db_vocab = temporal_affine_backward(dout, cache['scores'])
+
+        # Step 2: Go through the RNN backward pass.
+        dx, dh0, dWx, dWh, db = rnn_backward(dscores, cache['rnn'])
+
+        # Step 3: Go through the word embedding layer.
+        dW_embed = word_embedding_backward(dx, cache['word_embedding'])
+
+        # Step 4: Go through affine layer.
+        _, dW_proj, db_proj = affine_backward(dh0, cache['h0'])
+
+        # Step 5: Finalize the grads dictionary.
+        grads['W_vocab'] = dW_vocab
+        grads['b_vocab'] = db_vocab
+        grads['Wx'] = dWx
+        grads['Wh'] = dWh
+        grads['b'] = db
+        grads['W_embed'] = dW_embed
+        grads['W_proj'] = dW_proj
+        grads['b_proj'] = db_proj
+
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
@@ -179,7 +221,7 @@ class CaptioningRNN(object):
         W_vocab, b_vocab = self.params['W_vocab'], self.params['b_vocab']
 
         ###########################################################################
-        # TODO: Implement test-time sampling for the model. You will need to      #
+        # TO-DO: Implement test-time sampling for the model. You will need to     #
         # initialize the hidden state of the RNN by applying the learned affine   #
         # transform to the input image features. The first word that you feed to  #
         # the RNN should be the <START> token; its value is stored in the         #
@@ -199,7 +241,9 @@ class CaptioningRNN(object):
         # functions; you'll need to call rnn_step_forward or lstm_step_forward in #
         # a loop.                                                                 #
         ###########################################################################
-        pass
+
+
+
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################

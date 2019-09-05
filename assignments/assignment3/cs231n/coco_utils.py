@@ -3,7 +3,9 @@ import os, json
 import numpy as np
 import h5py
 
-BASE_DIR = 'cs231n/datasets/coco_captioning'
+
+# Had to modify this so that I can keep the data in a separate folder due to its size.
+BASE_DIR = 'C:\\Users\\DMIS2019\\Desktop\\github\\cs231n_2017_datasets\\datasets\\coco_captioning'
 
 def load_coco_data(base_dir=BASE_DIR,
                    max_train=None,

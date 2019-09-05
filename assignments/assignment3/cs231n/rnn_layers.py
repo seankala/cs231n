@@ -35,7 +35,19 @@ def rnn_step_forward(x, prev_h, Wx, Wh, b):
     # and cache variables respectively.                                          #
     ##############################################################################
 
+    # If you don't know exactly how this works, take a look at slides 22 and 23 of
+    #   Lecture 10.
+    # Drawing out the computational graph should be fairly easy if you look at how
+    #   the equation looks in slide 22.
 
+    H0 = np.matmul(prev_h, Wh) # (N, H) x (H, H) = (N, H)
+    H1 = np.matmul(x, Wx) # (N, D) x (D, H) = (N, H)
+    H2 = H0 + H1 + b # (N, H) + (N, H) + (H,) = (N, H)
+    Z = np.tanh(H2) # (N, H)
+
+    next_h = Z # (N, H)
+
+    cache = (x, Wx, Wh, prev_h, next_h, H2)
 
     ##############################################################################
     #                               END OF YOUR CODE                             #
@@ -65,7 +77,44 @@ def rnn_step_backward(dnext_h, cache):
     # HINT: For the tanh function, you can compute the local derivative in terms #
     # of the output value from tanh.                                             #
     ##############################################################################
-    pass
+
+    # The following calculations are also done using the computational graph drawn
+    #   in rnn_step_forward.
+
+    dZ = dnext_h # (N, H)
+    x, Wx, Wh, prev_h, next_h, H2 = cache
+
+    # dH2
+    dZ_H2 = 1.0 / np.square(np.cosh(H2)) # (N, H)
+    dH2 = dZ * dZ_H2 # (N, H) * (N, H) = (N, H)
+
+    # dH1
+    dH2_H1 = 1
+    dH1 = dH2 * dH2_H1 # (N, H)
+
+    # dWx
+    dH1_Wx = x # (N, D)
+    dWx = np.matmul(dH1_Wx.T, dH1) # (D, N) x (N, H) = (D, H)
+
+    # dx
+    dH1_x = Wx # (D, H)
+    dx = np.matmul(dH1, dH1_x.T) # (N, H) x (H, D) = (N, D)
+
+    # dH0
+    dH2_H0 = 1
+    dH0 = dH2 * dH2_H0 # (N, H)
+
+    # dWh
+    dH0_Wh = prev_h # (N, H)
+    dWh = np.matmul(dH0_Wh.T, dH0) # (H, N) x (N, H)
+
+    # dprev_h
+    dH0_prev_h = Wh # (H, H)
+    dprev_h = np.matmul(dH0, dH0_prev_h.T) # (N, H) x (H, H) = (N, H)
+
+    # db
+    db = np.sum(dH2, axis=0)
+
     ##############################################################################
     #                               END OF YOUR CODE                             #
     ##############################################################################

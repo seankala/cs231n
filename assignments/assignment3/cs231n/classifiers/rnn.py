@@ -242,7 +242,22 @@ class CaptioningRNN(object):
         # a loop.                                                                 #
         ###########################################################################
 
+        # Some basic initialization. Initialize hidden state and embed start token.
+        start = self._start
+        h, _ = affine_forward(features, W_proj, b_proj)
+        word_embed, _ = word_embedding_forward(start, W_embed)
 
+        for t in range(max_length):
+            # Calculate hidden state using rnn_step_forward.
+            h, _ = rnn_step_forward(word_embed, h, Wx, Wh, b)
+
+            # Calculate the scores using affine transformation.
+            scores, _ = affine_forward(h, W_vocab, b_vocab)
+
+            # Find the highest score.
+            captions[:, t] = np.argmax(scores, axis=1)
+
+            word_embed, _ = word_embedding_forward(captions[:, t], W_embed)
 
         ############################################################################
         #                             END OF YOUR CODE                             #

@@ -88,7 +88,7 @@ def rnn_step_backward(dnext_h, cache):
     H2 = H0 + H1 + b
 
     # dH2
-    dZ_H2 = 1.0 / np.square(np.cosh(H2)) # (N, H)
+    dZ_H2 = 1.0 / np.square(np.cosh(H2), dtype=np.float64) # (N, H)
     dH2 = dZ * dZ_H2 # (N, H) * (N, H) = (N, H)
 
     # dH1
